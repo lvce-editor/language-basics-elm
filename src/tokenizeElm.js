@@ -182,8 +182,11 @@ export const tokenizeLine = (line, lineState) => {
             token = TokenType.KeywordImport
             state = State.AfterKeywordModule
             break
+          case 'port':
+            token = TokenType.Keyword
+            state = State.TopLevelContent
+            break
           default:
-            keyword
             throw new Error('no')
         }
         break
@@ -292,3 +295,5 @@ export const tokenizeLine = (line, lineState) => {
     tokens,
   }
 }
+
+tokenizeLine(`port module Main exposing (..)`, initialLineState)
