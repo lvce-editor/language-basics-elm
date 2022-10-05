@@ -15,6 +15,8 @@ export const State = {
   AfterTypeName: 11,
   AfterTypeNameAfterWhitespace: 12,
   InsideLineComment: 13,
+  AfterKeywordModule: 14,
+  AfterModuleName: 15,
 }
 
 export const StateMap = {
@@ -39,6 +41,7 @@ export const TokenType = {
   Definition: 11,
   TypeName: 12,
   Type: 13,
+  KeywordImport: 14,
 }
 
 export const TokenMap = {
@@ -56,6 +59,7 @@ export const TokenMap = {
   [TokenType.Definition]: 'Definition',
   [TokenType.TypeName]: 'TypeName',
   [TokenType.Type]: 'Type',
+  [TokenType.KeywordImport]: 'KeywordImport',
 }
 
 export const initialLineState = {
@@ -134,12 +138,14 @@ export const tokenizeLine = (line, lineState) => {
         } else if ((next = part.match(RE_PUNCTUATION))) {
           token = TokenType.Punctuation
           state = State.TopLevelContent
+        } else if ((next = part.match(RE_ANYTHING_UNTIL_END))) {
+          token = TokenType.Text
+          state = State.TopLevelContent
         } else {
           part.startsWith('Bool') //?
           throw new Error('no')
         }
         break
-
       case State.InsideBlockComment:
         if ((next = part.match(RE_BLOCK_COMMENT_END))) {
           token = TokenType.Comment
@@ -155,7 +161,6 @@ export const tokenizeLine = (line, lineState) => {
           throw new Error('no')
         }
         break
-
       case State.Keyword:
         const keyword = next[0]
         switch (keyword) {
@@ -173,7 +178,12 @@ export const tokenizeLine = (line, lineState) => {
             token = TokenType.Definition
             state = State.AfterKeywordType
             break
+          case 'module':
+            token = TokenType.KeywordImport
+            state = State.AfterKeywordModule
+            break
           default:
+            keyword
             throw new Error('no')
         }
         break
@@ -185,7 +195,6 @@ export const tokenizeLine = (line, lineState) => {
           throw new Error('no')
         }
         break
-
       case State.AfterKeywordTypeAfterWhitespace:
         if ((next = part.match(RE_WORD_ALIAS))) {
           token = TokenType.Keyword
@@ -198,7 +207,6 @@ export const tokenizeLine = (line, lineState) => {
           throw new Error('no')
         }
         break
-
       case State.AfterTypeName:
         if ((next = part.match(RE_WHITESPACE))) {
           token = TokenType.Whitespace
@@ -207,7 +215,6 @@ export const tokenizeLine = (line, lineState) => {
           throw new Error('no')
         }
         break
-
       case State.AfterTypeNameAfterWhitespace:
         if ((next = part.match(RE_EQUAL_SIGN))) {
           token = TokenType.Punctuation
@@ -218,7 +225,6 @@ export const tokenizeLine = (line, lineState) => {
           throw new Error('no')
         }
         break
-
       case State.InsideTypeRightHandSide:
         if ((next = part.match(RE_VARIABLE_NAME))) {
           token = TokenType.Type
@@ -234,7 +240,6 @@ export const tokenizeLine = (line, lineState) => {
           throw new Error('no')
         }
         break
-
       case State.AfterTypeColon:
         if ((next = part.match(RE_WHITESPACE_SINGLE_LINE))) {
           token = TokenType.Whitespace
@@ -253,7 +258,25 @@ export const tokenizeLine = (line, lineState) => {
           throw new Error('no')
         }
         break
-
+      case State.AfterKeywordModule:
+        if ((next = part.match(RE_WHITESPACE))) {
+          token = TokenType.Whitespace
+          state = State.AfterKeywordModule
+        } else if ((next = part.match(RE_VARIABLE_NAME))) {
+          token = TokenType.VariableName
+          state = State.AfterModuleName
+        } else {
+          throw new Error('no')
+        }
+        break
+      case State.AfterModuleName:
+        if ((next = part.match(RE_WHITESPACE))) {
+          token = TokenType.Whitespace
+          state = State.TopLevelContent
+        } else {
+          throw new Error('no')
+        }
+        break
       default:
         throw new Error('no')
     }
