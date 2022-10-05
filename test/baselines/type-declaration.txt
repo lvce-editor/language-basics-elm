@@ -1,6 +1,6 @@
-Definition
+Keyword
 Whitespace
-TypeName
+Type
 NewLine
 Whitespace
 Punctuation
