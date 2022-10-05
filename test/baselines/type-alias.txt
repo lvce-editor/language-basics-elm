@@ -1,0 +1,10 @@
+Definition
+Whitespace
+Keyword
+Whitespace
+TypeName
+Whitespace
+Punctuation
+NewLine
+Whitespace
+Type
