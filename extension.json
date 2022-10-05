@@ -1,0 +1,12 @@
+{
+  "id": "builtin.language-basics-elm",
+  "name": "Language Basics Elm",
+  "description": "Provides syntax highlighting and bracket matching in Elm files.",
+  "languages": [
+    {
+      "id": "elm",
+      "extensions": [".elm"],
+      "tokenize": "src/tokenizeElm.js"
+    }
+  ]
+}
