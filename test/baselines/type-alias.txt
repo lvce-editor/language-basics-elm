@@ -1,8 +1,8 @@
-Definition
+Keyword
 Whitespace
 Keyword
 Whitespace
-TypeName
+Type
 Whitespace
 Punctuation
 NewLine

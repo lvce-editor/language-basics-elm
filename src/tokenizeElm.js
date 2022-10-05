@@ -39,8 +39,7 @@ export const TokenType = {
   Text: 9,
   LanguageConstantBoolean: 10,
   Definition: 11,
-  TypeName: 12,
-  Type: 13,
+  Type: 12,
   KeywordImport: 14,
 }
 
@@ -56,8 +55,8 @@ export const TokenMap = {
   [TokenType.Comment]: 'Comment',
   [TokenType.Text]: 'Text',
   [TokenType.LanguageConstantBoolean]: 'LanguageConstantBoolean',
-  [TokenType.Definition]: 'Definition',
-  [TokenType.TypeName]: 'TypeName',
+  [TokenType.Definition]: 'Type',
+  [TokenType.Type]: 'TypeName',
   [TokenType.Type]: 'Type',
   [TokenType.KeywordImport]: 'KeywordImport',
 }
@@ -175,7 +174,7 @@ export const tokenizeLine = (line, lineState) => {
             state = State.TopLevelContent
             break
           case 'type':
-            token = TokenType.Definition
+            token = TokenType.Keyword
             state = State.AfterKeywordType
             break
           case 'module':
@@ -203,7 +202,7 @@ export const tokenizeLine = (line, lineState) => {
           token = TokenType.Keyword
           state = State.AfterKeywordType
         } else if ((next = part.match(RE_VARIABLE_NAME))) {
-          token = TokenType.TypeName
+          token = TokenType.Type
           state = State.AfterTypeName
         } else {
           part //?
