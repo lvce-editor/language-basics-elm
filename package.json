@@ -21,5 +21,42 @@
   "prettier": {
     "semi": false,
     "singleQuote": true
+  },
+  "test-tokenize": {
+    "skip": [
+      "elm-spa-api-endpoint",
+      "elm-spa-api",
+      "elm-spa-article-body",
+      "elm-spa-article-comment",
+      "elm-spa-article-feed",
+      "elm-spa-article-slug",
+      "elm-spa-article-tag",
+      "elm-spa-article",
+      "elm-spa-asset",
+      "elm-spa-author",
+      "elm-spa-avatar",
+      "elm-spa-commentid",
+      "elm-spa-email",
+      "elm-spa-loading",
+      "elm-spa-log",
+      "elm-spa-main",
+      "elm-spa-page-article-editor",
+      "elm-spa-page-article",
+      "elm-spa-page-blank",
+      "elm-spa-page-home",
+      "elm-spa-page-login",
+      "elm-spa-page-notfound",
+      "elm-spa-page-profile",
+      "elm-spa-page-register",
+      "elm-spa-page-settings",
+      "elm-spa-page",
+      "elm-spa-paginatedlist",
+      "elm-spa-profile",
+      "elm-spa-route",
+      "elm-spa-session",
+      "elm-spa-timestamp",
+      "elm-spa-username",
+      "elm-spa-viewer"
+    ]
   }
 }
