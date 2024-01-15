@@ -96,7 +96,7 @@ const RE_LINE_COMMENT = /^\-\-[^\n]*/
 const RE_BLOCK_COMMENT_START = /^\{\-/
 const RE_BLOCK_COMMENT_END = /^\-\}/
 const RE_BLOCK_COMMENT_CONTENT = /^.+(?=\-\})/s
-const RE_PUNCTUATION = /^(?:\(|\)|\[|\]|\||\->)/
+const RE_PUNCTUATION = /^[\(\)\[\]\-\>\.\,\|]+/
 const RE_WORD_ALIAS = /^alias/
 const RE_ANYTHING_UNTIL_END = /^.+/s
 
@@ -141,7 +141,6 @@ export const tokenizeLine = (line, lineState) => {
           token = TokenType.Text
           state = State.TopLevelContent
         } else {
-          part.startsWith('Bool') //?
           throw new Error('no')
         }
         break
@@ -182,6 +181,7 @@ export const tokenizeLine = (line, lineState) => {
             state = State.AfterKeywordModule
             break
           case 'port':
+          case 'as':
             token = TokenType.Keyword
             state = State.TopLevelContent
             break
