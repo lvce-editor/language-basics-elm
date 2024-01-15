@@ -228,7 +228,10 @@ export const tokenizeLine = (line, lineState) => {
         }
         break
       case State.InsideTypeRightHandSide:
-        if ((next = part.match(RE_VARIABLE_NAME))) {
+        if ((next = part.match(RE_KEYWORD))) {
+          state = State.Keyword
+          continue
+        } else if ((next = part.match(RE_VARIABLE_NAME))) {
           token = TokenType.Type
           state = State.InsideTypeRightHandSide
         } else if ((next = part.match(RE_WHITESPACE))) {
