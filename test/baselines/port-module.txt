@@ -7,4 +7,3 @@ Whitespace
 KeywordImport
 Whitespace
 Punctuation
-Text
