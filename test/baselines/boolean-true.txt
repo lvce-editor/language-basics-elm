@@ -1,1 +1,1 @@
-LanguageConstantBoolean
+LanguageConstant

@@ -54,7 +54,7 @@ export const TokenMap = {
   [TokenType.VariableName]: 'VariableName',
   [TokenType.Comment]: 'Comment',
   [TokenType.Text]: 'Text',
-  [TokenType.LanguageConstantBoolean]: 'LanguageConstantBoolean',
+  [TokenType.LanguageConstantBoolean]: 'LanguageConstant',
   [TokenType.Definition]: 'Type',
   [TokenType.Type]: 'TypeName',
   [TokenType.Type]: 'Type',
@@ -165,7 +165,7 @@ export const tokenizeLine = (line, lineState) => {
         switch (keyword) {
           case 'import':
           case 'exposing':
-            token = TokenType.Keyword
+            token = TokenType.KeywordImport
             state = State.TopLevelContent
             break
           case 'False':
