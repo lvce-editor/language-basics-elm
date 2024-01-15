@@ -96,7 +96,7 @@ const RE_LINE_COMMENT = /^\-\-[^\n]*/
 const RE_BLOCK_COMMENT_START = /^\{\-/
 const RE_BLOCK_COMMENT_END = /^\-\}/
 const RE_BLOCK_COMMENT_CONTENT = /^.+(?=\-\})/s
-const RE_PUNCTUATION = /^[\(\)\[\]\-\>\.\,\|]+/
+const RE_PUNCTUATION = /^[\(\)\[\]\-\>\.\,\|\=]+/
 const RE_WORD_ALIAS = /^alias/
 const RE_ANYTHING_UNTIL_END = /^.+/s
 
