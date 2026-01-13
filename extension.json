@@ -5,8 +5,11 @@
   "languages": [
     {
       "id": "elm",
-      "extensions": [".elm"],
+      "extensions": [
+        ".elm"
+      ],
       "tokenize": "src/tokenizeElm.js"
     }
-  ]
+  ],
+  "repository": "https://github.com/lvce-editor/language-basics-elm"
 }
