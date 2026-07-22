@@ -5,9 +5,7 @@
   "languages": [
     {
       "id": "elm",
-      "extensions": [
-        ".elm"
-      ],
+      "extensions": [".elm"],
       "tokenize": "src/tokenizeElm.js"
     }
   ],
