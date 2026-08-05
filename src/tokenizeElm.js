@@ -96,7 +96,7 @@ const RE_LINE_COMMENT = /^\-\-[^\n]*/
 const RE_BLOCK_COMMENT_START = /^\{\-/
 const RE_BLOCK_COMMENT_END = /^\-\}/
 const RE_BLOCK_COMMENT_CONTENT = /^.+(?=\-\})/s
-const RE_PUNCTUATION = /^[\(\)\[\]\-\>\.\,\|\=\{\}\_,;\:\"\'\+\-]+/
+const RE_PUNCTUATION = /^[\(\)\[\]\\\-\>\.\,\|\=\{\}\_,;\:\"\'\+\-]+/
 const RE_WORD_ALIAS = /^alias/
 const RE_ANYTHING_UNTIL_END = /^.+/s
 
@@ -124,6 +124,9 @@ export const tokenizeLine = (line, lineState) => {
           continue
         } else if ((next = part.match(RE_VARIABLE_NAME))) {
           token = TokenType.VariableName
+          state = State.TopLevelContent
+        } else if ((next = part.match(RE_NUMERIC))) {
+          token = TokenType.Numeric
           state = State.TopLevelContent
         } else if ((next = part.match(RE_LINE_COMMENT))) {
           token = TokenType.Comment
