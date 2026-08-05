@@ -51,7 +51,7 @@ Comment
 NewLine
 NewLine
 NewLine
-VariableName
+Function
 Whitespace
 Punctuation
 Whitespace
@@ -63,7 +63,7 @@ Type
 Whitespace
 Type
 NewLine
-VariableName
+Function
 Whitespace
 Punctuation
 NewLine
@@ -116,13 +116,13 @@ Type
 NewLine
 NewLine
 NewLine
-VariableName
+Function
 Whitespace
 Punctuation
 Whitespace
 Type
 NewLine
-VariableName
+Function
 Whitespace
 Punctuation
 NewLine
@@ -152,7 +152,7 @@ Type
 NewLine
 NewLine
 NewLine
-VariableName
+Function
 Whitespace
 Punctuation
 Whitespace
@@ -166,7 +166,7 @@ Punctuation
 Whitespace
 Type
 NewLine
-VariableName
+Function
 Whitespace
 VariableName
 Whitespace
@@ -213,7 +213,7 @@ Comment
 NewLine
 NewLine
 NewLine
-VariableName
+Function
 Whitespace
 Punctuation
 Whitespace
@@ -225,7 +225,7 @@ Type
 Whitespace
 Type
 NewLine
-VariableName
+Function
 Whitespace
 VariableName
 Whitespace
@@ -253,9 +253,9 @@ Punctuation
 Whitespace
 VariableName
 Whitespace
-Punctuation
+PunctuationString
 String
-Punctuation
+PunctuationString
 Whitespace
 Punctuation
 NewLine
@@ -297,9 +297,9 @@ Punctuation
 Whitespace
 VariableName
 Whitespace
-Punctuation
+PunctuationString
 String
-Punctuation
+PunctuationString
 Whitespace
 Punctuation
 NewLine

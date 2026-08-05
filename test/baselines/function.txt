@@ -1,4 +1,4 @@
-VariableName
+Function
 Whitespace
 Punctuation
 Whitespace
@@ -6,7 +6,7 @@ Type
 Whitespace
 Type
 NewLine
-VariableName
+Function
 Whitespace
 Punctuation
 NewLine
