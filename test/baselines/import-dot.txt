@@ -1,9 +1,9 @@
 KeywordImport
 Whitespace
-VariableName
+Type
 Punctuation
-VariableName
+Type
 Whitespace
 Keyword
 Whitespace
-VariableName
+Type
