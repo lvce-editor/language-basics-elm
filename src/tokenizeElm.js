@@ -17,10 +17,17 @@ export const State = {
   InsideLineComment: 13,
   AfterKeywordModule: 14,
   AfterModuleName: 15,
+  InsideDoubleQuoteString: 16,
+  InsideSingleQuoteString: 17,
+  InsideTripleQuoteString: 18,
 }
 
 export const StateMap = {
   [State.TopLevelContent]: 'TopLevelContent',
+  [State.InsideBlockComment]: 'InsideBlockComment',
+  [State.InsideDoubleQuoteString]: 'InsideDoubleQuoteString',
+  [State.InsideSingleQuoteString]: 'InsideSingleQuoteString',
+  [State.InsideTripleQuoteString]: 'InsideTripleQuoteString',
 }
 
 /**
@@ -55,250 +62,260 @@ export const TokenMap = {
   [TokenType.Comment]: 'Comment',
   [TokenType.Text]: 'Text',
   [TokenType.LanguageConstantBoolean]: 'LanguageConstant',
-  [TokenType.Definition]: 'Type',
-  [TokenType.Type]: 'TypeName',
+  [TokenType.Definition]: 'Function',
   [TokenType.Type]: 'Type',
   [TokenType.KeywordImport]: 'KeywordImport',
 }
 
 export const initialLineState = {
   state: State.TopLevelContent,
+  blockCommentDepth: 0,
 }
 
-const RE_WHITESPACE = /^\s+/
-const RE_WHITESPACE_SINGLE_LINE = /^( |\t)+/
-const RE_WHITESPACE_NEWLINE = /^\n/
-const RE_CONSTANT = /^(true|false|null)/
-const RE_STRING_DOUBLE_QUOTE_CONTENT = /^[^"\n]+/
-const RE_STRING_SINGLE_QUOTE_CONTENT = /^[^'\n]+/
-const RE_DOUBLE_QUOTE = /^"/
-const RE_CURLY_OPEN = /^\{/
-const RE_CURLY_CLOSE = /^\}/
-const RE_SQUARE_OPEN = /^\[/
-const RE_SQUARE_CLOSE = /^\]/
-const RE_COMMA = /^,/
-const RE_COLON = /^:/
-const RE_NUMERIC =
-  /^((0(x|X)[0-9a-fA-F]*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b/
+const keywords = new Set([
+  'alias',
+  'as',
+  'case',
+  'else',
+  'if',
+  'in',
+  'infix',
+  'infixl',
+  'infixr',
+  'let',
+  'of',
+  'port',
+  'then',
+  'type',
+  'where',
+])
 
-const RE_KEYWORD =
-  /^(?:where|type|True|then|port|of|module|let|in|import|if|False|exposing|else|case|as)\b/
-const RE_LANGUAGE_CONSTANT = /^(?:True|False)\b/
-const RE_IMPORT = /^[a-zA-Z\.]+/
-const RE_SEMICOLON = /^;/
-const RE_VARIABLE_NAME = /^[a-zA-Z][a-zA-Z\d\_\-]*/
-const RE_ROUND_OPEN = /^\(/
-const RE_ROUND_CLOSE = /^\)/
-const RE_DOT = /^\./
-const RE_EQUAL_SIGN = /^=/
-const RE_SINGLE_QUOTE = /^'/
-const RE_LINE_COMMENT = /^\-\-[^\n]*/
-const RE_BLOCK_COMMENT_START = /^\{\-/
-const RE_BLOCK_COMMENT_END = /^\-\}/
-const RE_BLOCK_COMMENT_CONTENT = /^.+(?=\-\})/s
-const RE_PUNCTUATION = /^[\(\)\[\]\\\-\>\.\,\|\=\{\}\_,;\:\"\'\+\-]+/
-const RE_WORD_ALIAS = /^alias/
-const RE_ANYTHING_UNTIL_END = /^.+/s
+const importKeywords = new Set(['exposing', 'import', 'module'])
+const languageConstants = new Set(['False', 'True'])
+
+const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/
+const RE_NUMBER =
+  /^(?:0[xX][\dA-Fa-f]+|(?:\d+\.\d+|\d+\.|\.\d+|\d+)(?:[eE][+-]?\d+)?)/
+const RE_PUNCTUATION = /^[()[\]{}.,:;=|+\-*/<>\\!&^%$#@?~]+/
+const RE_WHITESPACE = /^[\t ]+/
 
 export const hasArrayReturn = true
 
+const pushToken = (tokens, type, length) => {
+  tokens.push(type, length)
+}
+
+const getBlockCommentBoundary = (line, index) => {
+  const openIndex = line.indexOf('{-', index)
+  const closeIndex = line.indexOf('-}', index)
+  if (openIndex === -1) {
+    return closeIndex
+  }
+  if (closeIndex === -1) {
+    return openIndex
+  }
+  return Math.min(openIndex, closeIndex)
+}
+
+const isFunctionDefinition = (line, index, name) => {
+  if (!/^[a-z_]/.test(name)) {
+    return false
+  }
+  const rest = line.slice(index + name.length)
+  if (/^port\s+$/.test(line.slice(0, index))) {
+    return /^\s*:/.test(rest)
+  }
+  if (index !== 0) {
+    return false
+  }
+  return /^\s*:/.test(rest) || /^\s*=/.test(rest) || /^\s+.*=/.test(rest)
+}
+
 /**
  * @param {string} line
- * @param {any} lineState
+ * @param {{state: number, blockCommentDepth?: number}} lineState
  */
 export const tokenizeLine = (line, lineState) => {
-  let next = null
   let index = 0
-  let tokens = []
-  let token = TokenType.None
   let state = lineState.state
+  let blockCommentDepth = lineState.blockCommentDepth || 0
+  const tokens = []
+
+  if (state === State.InsideBlockComment && blockCommentDepth === 0) {
+    blockCommentDepth = 1
+  }
+
   while (index < line.length) {
     const part = line.slice(index)
-    switch (state) {
-      case State.TopLevelContent:
-        if ((next = part.match(RE_WHITESPACE))) {
-          token = TokenType.Whitespace
+
+    if (state === State.InsideBlockComment) {
+      if (part.startsWith('{-')) {
+        pushToken(tokens, TokenType.Comment, 2)
+        blockCommentDepth++
+        index += 2
+        continue
+      }
+      if (part.startsWith('-}')) {
+        pushToken(tokens, TokenType.Comment, 2)
+        blockCommentDepth--
+        index += 2
+        if (blockCommentDepth === 0) {
           state = State.TopLevelContent
-        } else if ((next = part.match(RE_KEYWORD))) {
-          state = State.Keyword
-          continue
-        } else if ((next = part.match(RE_VARIABLE_NAME))) {
-          token = TokenType.VariableName
-          state = State.TopLevelContent
-        } else if ((next = part.match(RE_NUMERIC))) {
-          token = TokenType.Numeric
-          state = State.TopLevelContent
-        } else if ((next = part.match(RE_LINE_COMMENT))) {
-          token = TokenType.Comment
-          state = State.TopLevelContent
-        } else if ((next = part.match(RE_BLOCK_COMMENT_START))) {
-          token = TokenType.Comment
-          state = State.InsideBlockComment
-        } else if ((next = part.match(RE_COLON))) {
-          token = TokenType.Punctuation
-          state = State.AfterTypeColon
-        } else if ((next = part.match(RE_PUNCTUATION))) {
-          token = TokenType.Punctuation
-          state = State.TopLevelContent
-        } else if ((next = part.match(RE_ANYTHING_UNTIL_END))) {
-          token = TokenType.Text
-          state = State.TopLevelContent
-        } else {
-          throw new Error('no')
         }
-        break
-      case State.InsideBlockComment:
-        if ((next = part.match(RE_BLOCK_COMMENT_END))) {
-          token = TokenType.Comment
-          state = State.TopLevelContent
-        } else if ((next = part.match(RE_BLOCK_COMMENT_CONTENT))) {
-          token = TokenType.Comment
-          state = State.InsideBlockComment
-        } else if ((next = part.match(RE_ANYTHING_UNTIL_END))) {
-          token = TokenType.Comment
-          state = State.InsideBlockComment
-        } else {
-          part //?
-          throw new Error('no')
-        }
-        break
-      case State.Keyword:
-        const keyword = next[0]
-        switch (keyword) {
-          case 'import':
-          case 'exposing':
-            token = TokenType.KeywordImport
-            state = State.TopLevelContent
-            break
-          case 'False':
-          case 'True':
-            token = TokenType.LanguageConstantBoolean
-            state = State.TopLevelContent
-            break
-          case 'type':
-            token = TokenType.Keyword
-            state = State.AfterKeywordType
-            break
-          case 'module':
-            token = TokenType.KeywordImport
-            state = State.AfterKeywordModule
-            break
-          default:
-            token = TokenType.Keyword
-            state = State.TopLevelContent
-            break
-        }
-        break
-      case State.AfterKeywordType:
-        if ((next = part.match(RE_WHITESPACE))) {
-          token = TokenType.Whitespace
-          state = State.AfterKeywordTypeAfterWhitespace
-        } else {
-          throw new Error('no')
-        }
-        break
-      case State.AfterKeywordTypeAfterWhitespace:
-        if ((next = part.match(RE_WORD_ALIAS))) {
-          token = TokenType.Keyword
-          state = State.AfterKeywordType
-        } else if ((next = part.match(RE_VARIABLE_NAME))) {
-          token = TokenType.Type
-          state = State.AfterTypeName
-        } else {
-          part //?
-          throw new Error('no')
-        }
-        break
-      case State.AfterTypeName:
-        if ((next = part.match(RE_WHITESPACE))) {
-          token = TokenType.Whitespace
-          state = State.AfterTypeNameAfterWhitespace
-        } else {
-          throw new Error('no')
-        }
-        break
-      case State.AfterTypeNameAfterWhitespace:
-        if ((next = part.match(RE_EQUAL_SIGN))) {
-          token = TokenType.Punctuation
-          state = State.InsideTypeRightHandSide
-        } else {
-          part //?
-          part.startsWith('M') //?
-          throw new Error('no')
-        }
-        break
-      case State.InsideTypeRightHandSide:
-        if ((next = part.match(RE_KEYWORD))) {
-          state = State.Keyword
-          continue
-        } else if ((next = part.match(RE_VARIABLE_NAME))) {
-          token = TokenType.Type
-          state = State.InsideTypeRightHandSide
-        } else if ((next = part.match(RE_WHITESPACE))) {
-          token = TokenType.Whitespace
-          state = State.InsideTypeRightHandSide
-        } else if ((next = part.match(RE_LINE_COMMENT))) {
-          token = TokenType.Comment
-          state = State.TopLevelContent
-        } else if ((next = part.match(RE_PUNCTUATION))) {
-          token = TokenType.Punctuation
-          state = State.InsideTypeRightHandSide
-        } else {
-          part //?
-          throw new Error('no')
-        }
-        break
-      case State.AfterTypeColon:
-        if ((next = part.match(RE_WHITESPACE_SINGLE_LINE))) {
-          token = TokenType.Whitespace
-          state = State.AfterTypeColon
-        } else if ((next = part.match(RE_VARIABLE_NAME))) {
-          token = TokenType.Type
-          state = State.AfterTypeColon
-        } else if ((next = part.match(RE_WHITESPACE_NEWLINE))) {
-          token = TokenType.Whitespace
-          state = State.TopLevelContent
-        } else if ((next = part.match(RE_PUNCTUATION))) {
-          token = TokenType.Punctuation
-          state = State.AfterTypeColon
-        } else {
-          part //?
-          throw new Error('no')
-        }
-        break
-      case State.AfterKeywordModule:
-        if ((next = part.match(RE_WHITESPACE))) {
-          token = TokenType.Whitespace
-          state = State.AfterKeywordModule
-        } else if ((next = part.match(RE_VARIABLE_NAME))) {
-          token = TokenType.VariableName
-          state = State.AfterModuleName
-        } else {
-          throw new Error('no')
-        }
-        break
-      case State.AfterModuleName:
-        if ((next = part.match(RE_WHITESPACE))) {
-          token = TokenType.Whitespace
-          state = State.TopLevelContent
-        } else {
-          throw new Error('no')
-        }
-        break
-      default:
-        throw new Error('no')
+        continue
+      }
+      const boundary = getBlockCommentBoundary(line, index)
+      const length = boundary === -1 ? line.length - index : boundary - index
+      pushToken(tokens, TokenType.Comment, length)
+      index += length
+      continue
     }
-    const tokenLength = next[0].length
-    index += tokenLength
-    tokens.push(token, tokenLength)
+
+    if (state === State.InsideTripleQuoteString) {
+      if (part.startsWith('"""')) {
+        pushToken(tokens, TokenType.PunctuationString, 3)
+        index += 3
+        state = State.TopLevelContent
+        continue
+      }
+      const closingIndex = line.indexOf('"""', index)
+      const length =
+        closingIndex === -1 ? line.length - index : closingIndex - index
+      pushToken(tokens, TokenType.String, length)
+      index += length
+      continue
+    }
+
+    if (state === State.InsideDoubleQuoteString) {
+      if (part.startsWith('"')) {
+        pushToken(tokens, TokenType.PunctuationString, 1)
+        index++
+        state = State.TopLevelContent
+        continue
+      }
+      const match = part.match(/^\\(?:u\{[\dA-Fa-f]+\}|.)/)
+      if (match) {
+        pushToken(tokens, TokenType.String, match[0].length)
+        index += match[0].length
+        continue
+      }
+      const length = part.search(/["\\]/)
+      const contentLength = length === -1 ? part.length : Math.max(1, length)
+      pushToken(tokens, TokenType.String, contentLength)
+      index += contentLength
+      continue
+    }
+
+    if (state === State.InsideSingleQuoteString) {
+      if (part.startsWith("'")) {
+        pushToken(tokens, TokenType.PunctuationString, 1)
+        index++
+        state = State.TopLevelContent
+        continue
+      }
+      const match = part.match(/^\\(?:u\{[\dA-Fa-f]+\}|.)/)
+      if (match) {
+        pushToken(tokens, TokenType.String, match[0].length)
+        index += match[0].length
+        continue
+      }
+      const length = part.search(/['\\]/)
+      const contentLength = length === -1 ? part.length : Math.max(1, length)
+      pushToken(tokens, TokenType.String, contentLength)
+      index += contentLength
+      continue
+    }
+
+    const whitespace = part.match(RE_WHITESPACE)
+    if (whitespace) {
+      pushToken(tokens, TokenType.Whitespace, whitespace[0].length)
+      index += whitespace[0].length
+      continue
+    }
+
+    if (part.startsWith('--')) {
+      pushToken(tokens, TokenType.Comment, part.length)
+      index = line.length
+      continue
+    }
+
+    if (part.startsWith('{-')) {
+      pushToken(tokens, TokenType.Comment, 2)
+      blockCommentDepth = 1
+      state = State.InsideBlockComment
+      index += 2
+      continue
+    }
+
+    if (part.startsWith('"""')) {
+      pushToken(tokens, TokenType.PunctuationString, 3)
+      state = State.InsideTripleQuoteString
+      index += 3
+      continue
+    }
+
+    if (part.startsWith('"')) {
+      pushToken(tokens, TokenType.PunctuationString, 1)
+      state = State.InsideDoubleQuoteString
+      index++
+      continue
+    }
+
+    if (part.startsWith("'")) {
+      pushToken(tokens, TokenType.PunctuationString, 1)
+      state = State.InsideSingleQuoteString
+      index++
+      continue
+    }
+
+    const number = part.match(RE_NUMBER)
+    if (number) {
+      pushToken(tokens, TokenType.Numeric, number[0].length)
+      index += number[0].length
+      continue
+    }
+
+    const identifier = part.match(RE_IDENTIFIER)
+    if (identifier) {
+      const name = identifier[0]
+      let type = TokenType.VariableName
+      if (importKeywords.has(name)) {
+        type = TokenType.KeywordImport
+      } else if (keywords.has(name)) {
+        type = TokenType.Keyword
+      } else if (languageConstants.has(name)) {
+        type = TokenType.LanguageConstantBoolean
+      } else if (isFunctionDefinition(line, index, name)) {
+        type = TokenType.Definition
+      } else if (/^[A-Z]/.test(name)) {
+        type = TokenType.Type
+      }
+      pushToken(tokens, type, name.length)
+      index += name.length
+      continue
+    }
+
+    const punctuation = part.match(RE_PUNCTUATION)
+    if (punctuation) {
+      pushToken(tokens, TokenType.Punctuation, punctuation[0].length)
+      index += punctuation[0].length
+      continue
+    }
+
+    pushToken(tokens, TokenType.Text, 1)
+    index++
   }
-  if (state === State.InsideLineComment) {
+
+  if (
+    state === State.InsideDoubleQuoteString ||
+    state === State.InsideSingleQuoteString
+  ) {
     state = State.TopLevelContent
   }
+
   return {
     state,
+    blockCommentDepth,
     tokens,
   }
 }
-
-tokenizeLine(`port module Main exposing (..)`, initialLineState)
