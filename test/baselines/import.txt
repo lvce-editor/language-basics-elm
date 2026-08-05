@@ -1,6 +1,6 @@
 KeywordImport
 Whitespace
-VariableName
+Type
 Whitespace
 KeywordImport
 Whitespace
