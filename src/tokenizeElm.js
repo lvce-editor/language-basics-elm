@@ -46,8 +46,10 @@ export const TokenType = {
   Text: 9,
   LanguageConstantBoolean: 10,
   Definition: 11,
+  Function: 11,
   Type: 12,
   KeywordImport: 14,
+  KeywordControl: 15,
 }
 
 export const TokenMap = {
@@ -62,9 +64,10 @@ export const TokenMap = {
   [TokenType.Comment]: 'Comment',
   [TokenType.Text]: 'Text',
   [TokenType.LanguageConstantBoolean]: 'LanguageConstant',
-  [TokenType.Definition]: 'Function',
+  [TokenType.Function]: 'Function',
   [TokenType.Type]: 'Type',
   [TokenType.KeywordImport]: 'KeywordImport',
+  [TokenType.KeywordControl]: 'KeywordControl',
 }
 
 export const initialLineState = {
@@ -91,6 +94,7 @@ const keywords = new Set([
 ])
 
 const importKeywords = new Set(['exposing', 'import', 'module'])
+const controlKeywords = new Set(['case', 'of'])
 const languageConstants = new Set(['False', 'True'])
 
 const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/
@@ -125,10 +129,46 @@ const isFunctionDefinition = (line, index, name) => {
   if (/^port\s+$/.test(line.slice(0, index))) {
     return /^\s*:/.test(rest)
   }
-  if (index !== 0) {
+  const prefix = line.slice(0, index)
+  if (prefix.trim()) {
     return false
   }
-  return /^\s*:/.test(rest) || /^\s*=/.test(rest) || /^\s+.*=/.test(rest)
+  if (index === 0) {
+    return /^\s*:/.test(rest) || /^\s*=/.test(rest) || /^\s+.*=/.test(rest)
+  }
+  return /^\s+.+\s*=/.test(rest)
+}
+
+const isModuleIdentifier = (line, index) => {
+  const modulePrefix = line.match(/^\s*(?:port\s+module|module|import)\s+/)
+  if (!modulePrefix || index < modulePrefix[0].length) {
+    return false
+  }
+  const exposingIndex = line.indexOf(' exposing ', modulePrefix[0].length)
+  return exposingIndex === -1 || index < exposingIndex
+}
+
+const isExposedFunction = (line, index, name) => {
+  if (!/^[a-z_]/.test(name)) {
+    return false
+  }
+  const exposingIndex = line.indexOf('exposing')
+  return exposingIndex !== -1 && index > exposingIndex
+}
+
+const isFunctionApplication = (line, index, name) => {
+  if (!/^[a-z_]/.test(name)) {
+    return false
+  }
+  const rest = line.slice(index + name.length)
+  if (!/^\s+(?=[A-Za-z\d_'"([{\\-])/.test(rest)) {
+    return false
+  }
+  const prefix = line.slice(0, index).trimEnd()
+  if (!prefix) {
+    return true
+  }
+  return /[.([,{=|>]$/.test(prefix)
 }
 
 /**
@@ -281,12 +321,22 @@ export const tokenizeLine = (line, lineState) => {
       let type = TokenType.VariableName
       if (importKeywords.has(name)) {
         type = TokenType.KeywordImport
+      } else if (controlKeywords.has(name)) {
+        type = TokenType.KeywordControl
       } else if (keywords.has(name)) {
         type = TokenType.Keyword
       } else if (languageConstants.has(name)) {
         type = TokenType.LanguageConstantBoolean
       } else if (isFunctionDefinition(line, index, name)) {
-        type = TokenType.Definition
+        type = TokenType.Function
+      } else if (isExposedFunction(line, index, name)) {
+        type = TokenType.Function
+      } else if (isFunctionApplication(line, index, name)) {
+        type = TokenType.Function
+      } else if (isModuleIdentifier(line, index)) {
+        type = TokenType.VariableName
+      } else if (line[index + name.length] === '.') {
+        type = TokenType.VariableName
       } else if (/^[A-Z]/.test(name)) {
         type = TokenType.Type
       }

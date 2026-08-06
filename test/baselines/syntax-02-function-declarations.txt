@@ -1,14 +1,14 @@
 KeywordImport
 Whitespace
-Type
+VariableName
 Whitespace
 KeywordImport
 Whitespace
 Punctuation
-VariableName
+Function
 Punctuation
 Whitespace
-VariableName
+Function
 Punctuation
 NewLine
 NewLine
