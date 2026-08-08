@@ -95,7 +95,7 @@ const keywords = new Set([
 ])
 
 const importKeywords = new Set(['exposing', 'import', 'module'])
-const controlKeywords = new Set(['case', 'of'])
+const controlKeywords = new Set(['case', 'else', 'if', 'of', 'then'])
 const languageConstants = new Set(['False', 'True'])
 
 const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/
