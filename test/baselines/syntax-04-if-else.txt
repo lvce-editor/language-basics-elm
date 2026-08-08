@@ -16,7 +16,7 @@ Whitespace
 Punctuation
 NewLine
 Whitespace
-Keyword
+KeywordControl
 Whitespace
 VariableName
 Whitespace
@@ -24,7 +24,7 @@ Punctuation
 Whitespace
 Numeric
 Whitespace
-Keyword
+KeywordControl
 NewLine
 Whitespace
 PunctuationString
@@ -33,9 +33,9 @@ PunctuationString
 NewLine
 NewLine
 Whitespace
-Keyword
+KeywordControl
 Whitespace
-Keyword
+KeywordControl
 Whitespace
 VariableName
 Whitespace
@@ -43,7 +43,7 @@ Punctuation
 Whitespace
 Numeric
 Whitespace
-Keyword
+KeywordControl
 NewLine
 Whitespace
 PunctuationString
@@ -52,7 +52,7 @@ PunctuationString
 NewLine
 NewLine
 Whitespace
-Keyword
+KeywordControl
 NewLine
 Whitespace
 PunctuationString
