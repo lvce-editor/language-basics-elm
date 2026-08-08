@@ -86,6 +86,7 @@ const keywords = new Set([
   'infixl',
   'infixr',
   'let',
+  'not',
   'of',
   'port',
   'then',
