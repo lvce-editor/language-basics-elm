@@ -101,6 +101,7 @@ const importKeywords = new Set(['exposing', 'import', 'module'])
 const controlKeywords = new Set(['case', 'else', 'if', 'of', 'then'])
 const operatorKeywords = new Set(['not'])
 const languageConstants = new Set(['False', 'Nothing', 'True'])
+const knownQualifiedFunctions = new Set(['List.indexedMap'])
 
 const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/
 const RE_NUMBER =
@@ -159,6 +160,14 @@ const isExposedFunction = (line, index, name) => {
   }
   const exposingIndex = line.indexOf('exposing')
   return exposingIndex !== -1 && index > exposingIndex
+}
+
+const isKnownQualifiedFunction = (line, index, name) => {
+  const prefix = line.slice(0, index)
+  const match = prefix.match(
+    /(?:^|[^A-Za-z\d_'])([A-Z][A-Za-z\d_']*(?:\.[A-Z][A-Za-z\d_']*)*\.)$/,
+  )
+  return Boolean(match && knownQualifiedFunctions.has(match[1] + name))
 }
 
 const isFunctionBoundary = (prefix) => {
@@ -390,6 +399,8 @@ export const tokenizeLine = (line, lineState) => {
       } else if (isFunctionDefinition(line, index, name)) {
         type = TokenType.Function
       } else if (isExposedFunction(line, index, name)) {
+        type = TokenType.Function
+      } else if (isKnownQualifiedFunction(line, index, name)) {
         type = TokenType.Function
       } else if (isFunctionApplication(line, index, name)) {
         type = TokenType.Function

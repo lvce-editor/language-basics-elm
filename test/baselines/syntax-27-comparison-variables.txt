@@ -32,7 +32,7 @@ NewLine
 Whitespace
 VariableName
 Punctuation
-VariableName
+Function
 NewLine
 Whitespace
 Punctuation
