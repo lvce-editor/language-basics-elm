@@ -2,7 +2,7 @@ Function
 Whitespace
 Punctuation
 Whitespace
-Keyword
+KeywordOperator
 Whitespace
 LanguageConstant
 NewLine

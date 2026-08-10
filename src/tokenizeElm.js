@@ -50,6 +50,7 @@ export const TokenType = {
   Type: 12,
   KeywordImport: 14,
   KeywordControl: 15,
+  KeywordOperator: 16,
 }
 
 export const TokenMap = {
@@ -68,6 +69,7 @@ export const TokenMap = {
   [TokenType.Type]: 'Type',
   [TokenType.KeywordImport]: 'KeywordImport',
   [TokenType.KeywordControl]: 'KeywordControl',
+  [TokenType.KeywordOperator]: 'KeywordOperator',
 }
 
 export const initialLineState = {
@@ -86,7 +88,6 @@ const keywords = new Set([
   'infixl',
   'infixr',
   'let',
-  'not',
   'of',
   'port',
   'then',
@@ -96,6 +97,7 @@ const keywords = new Set([
 
 const importKeywords = new Set(['exposing', 'import', 'module'])
 const controlKeywords = new Set(['case', 'else', 'if', 'of', 'then'])
+const operatorKeywords = new Set(['not'])
 const languageConstants = new Set(['False', 'True'])
 
 const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/
@@ -324,6 +326,8 @@ export const tokenizeLine = (line, lineState) => {
         type = TokenType.KeywordImport
       } else if (controlKeywords.has(name)) {
         type = TokenType.KeywordControl
+      } else if (operatorKeywords.has(name)) {
+        type = TokenType.KeywordOperator
       } else if (keywords.has(name)) {
         type = TokenType.Keyword
       } else if (languageConstants.has(name)) {
