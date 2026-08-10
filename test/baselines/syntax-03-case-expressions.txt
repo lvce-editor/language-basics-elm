@@ -34,7 +34,7 @@ VariableName
 NewLine
 NewLine
 Whitespace
-Class
+LanguageConstant
 Whitespace
 Punctuation
 NewLine
