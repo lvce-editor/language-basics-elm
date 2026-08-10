@@ -100,7 +100,7 @@ const keywords = new Set([
 const importKeywords = new Set(['exposing', 'import', 'module'])
 const controlKeywords = new Set(['case', 'else', 'if', 'of', 'then'])
 const operatorKeywords = new Set(['not'])
-const languageConstants = new Set(['False', 'True'])
+const languageConstants = new Set(['False', 'Nothing', 'True'])
 
 const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/
 const RE_NUMBER =
@@ -172,6 +172,14 @@ const isHtmlFunction = (line, index, name) => {
   return match?.[1] === 'Html' || match?.[1].startsWith('Html.')
 }
 
+const isFunctionBoundary = (prefix) => {
+  return (
+    /[.([,{]$/.test(prefix) ||
+    /(?:^|[^=<>/])=$/.test(prefix) ||
+    /(?:->|\|>)$/.test(prefix)
+  )
+}
+
 const isFunctionApplication = (line, index, name) => {
   if (!/^[a-z_]/.test(name)) {
     return false
@@ -187,7 +195,7 @@ const isFunctionApplication = (line, index, name) => {
   if (!prefix) {
     return true
   }
-  return /[.([,{=|>]$/.test(prefix)
+  return isFunctionBoundary(prefix)
 }
 
 const getUnionConstructor = (line) => {
