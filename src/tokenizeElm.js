@@ -161,6 +161,17 @@ const isExposedFunction = (line, index, name) => {
   return exposingIndex !== -1 && index > exposingIndex
 }
 
+const isHtmlFunction = (line, index, name) => {
+  if (!/^[a-z_]/.test(name)) {
+    return false
+  }
+  const prefix = line.slice(0, index)
+  const match = prefix.match(
+    /(?:^|[^A-Za-z\d_'.])([A-Z][A-Za-z\d_']*(?:\.[A-Z][A-Za-z\d_']*)*)\.$/,
+  )
+  return match?.[1] === 'Html' || match?.[1].startsWith('Html.')
+}
+
 const isFunctionApplication = (line, index, name) => {
   if (!/^[a-z_]/.test(name)) {
     return false
@@ -379,6 +390,8 @@ export const tokenizeLine = (line, lineState) => {
         type = TokenType.Keyword
       } else if (languageConstants.has(name)) {
         type = TokenType.LanguageConstantBoolean
+      } else if (isHtmlFunction(line, index, name)) {
+        type = TokenType.Function
       } else if (isFunctionDefinition(line, index, name)) {
         type = TokenType.Function
       } else if (isExposedFunction(line, index, name)) {
