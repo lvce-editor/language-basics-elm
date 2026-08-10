@@ -50,7 +50,8 @@ export const TokenType = {
   Type: 12,
   KeywordImport: 14,
   KeywordControl: 15,
-  KeywordOperator: 16,
+  Class: 16,
+  KeywordOperator: 17,
 }
 
 export const TokenMap = {
@@ -69,6 +70,7 @@ export const TokenMap = {
   [TokenType.Type]: 'Type',
   [TokenType.KeywordImport]: 'KeywordImport',
   [TokenType.KeywordControl]: 'KeywordControl',
+  [TokenType.Class]: 'Class',
   [TokenType.KeywordOperator]: 'KeywordOperator',
 }
 
@@ -163,26 +165,71 @@ const isFunctionApplication = (line, index, name) => {
   if (!/^[a-z_]/.test(name)) {
     return false
   }
+  const prefix = line.slice(0, index).trimEnd()
+  if (/(?:^|\s)\|>\s*(?:[A-Z][A-Za-z\d_']*\.)*$/.test(prefix)) {
+    return true
+  }
   const rest = line.slice(index + name.length)
   if (!/^\s+(?=[A-Za-z\d_'"([{\\-])/.test(rest)) {
     return false
   }
-  const prefix = line.slice(0, index).trimEnd()
   if (!prefix) {
     return true
   }
   return /[.([,{=|>]$/.test(prefix)
 }
 
+const getUnionConstructor = (line) => {
+  const match = line.match(
+    /^\s*(?:(?:type\s+[A-Z][A-Za-z\d_']*(?:\s+[a-z][A-Za-z\d_']*)*\s*)?=|\|)\s*([A-Z][A-Za-z\d_']*)/,
+  )
+  if (!match) {
+    return undefined
+  }
+  return {
+    index: match[0].lastIndexOf(match[1]),
+    name: match[1],
+  }
+}
+
+const isTypeIdentifier = (line, index, multilineTypeContext) => {
+  const prefix = line.slice(0, index)
+  if (multilineTypeContext) {
+    return true
+  }
+  if (/^\s*type(?:\s+alias)?\s*$/.test(prefix)) {
+    return true
+  }
+  if (/^\s*type\s+alias\b/.test(line)) {
+    return true
+  }
+  if (prefix.includes(':')) {
+    return true
+  }
+  if (/\bexposing\s*\([^)]*$/.test(prefix)) {
+    return true
+  }
+  const constructor = getUnionConstructor(line)
+  return constructor && index > constructor.index + constructor.name.length
+}
+
 /**
  * @param {string} line
- * @param {{state: number, blockCommentDepth?: number}} lineState
+ * @param {{state: number, blockCommentDepth?: number, multilineTypeContext?: boolean}} lineState
  */
 export const tokenizeLine = (line, lineState) => {
   let index = 0
   let state = lineState.state
   let blockCommentDepth = lineState.blockCommentDepth || 0
+  let multilineTypeContext = lineState.multilineTypeContext || false
   const tokens = []
+
+  if (!line.trim() || /^\S/.test(line)) {
+    multilineTypeContext = false
+  }
+  if (/^\s*type\s+alias\b/.test(line) || /^\S.*:\s*$/.test(line)) {
+    multilineTypeContext = true
+  }
 
   if (state === State.InsideBlockComment && blockCommentDepth === 0) {
     blockCommentDepth = 1
@@ -343,7 +390,9 @@ export const tokenizeLine = (line, lineState) => {
       } else if (line[index + name.length] === '.') {
         type = TokenType.VariableName
       } else if (/^[A-Z]/.test(name)) {
-        type = TokenType.Type
+        type = isTypeIdentifier(line, index, multilineTypeContext)
+          ? TokenType.Type
+          : TokenType.Class
       }
       pushToken(tokens, type, name.length)
       index += name.length
@@ -371,6 +420,7 @@ export const tokenizeLine = (line, lineState) => {
   return {
     state,
     blockCommentDepth,
+    multilineTypeContext,
     tokens,
   }
 }
