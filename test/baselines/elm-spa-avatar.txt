@@ -47,7 +47,7 @@ VariableName
 Punctuation
 VariableName
 Whitespace
-Keyword
+KeywordControl
 Whitespace
 VariableName
 Whitespace
@@ -63,7 +63,7 @@ VariableName
 Punctuation
 VariableName
 Whitespace
-Keyword
+KeywordControl
 Whitespace
 VariableName
 Whitespace
