@@ -142,6 +142,9 @@ const isFunctionDefinition = (line, index, name) => {
   if (index === 0) {
     return /^\s*:/.test(rest) || /^\s*=/.test(rest) || /^\s+.*=/.test(rest)
   }
+  if (/^\s*=/.test(rest)) {
+    return false
+  }
   return /^\s+.+\s*=/.test(rest)
 }
 
