@@ -52,7 +52,7 @@ Punctuation
 Whitespace
 Function
 Whitespace
-Type
+Class
 Whitespace
 Punctuation
 Whitespace

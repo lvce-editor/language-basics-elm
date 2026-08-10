@@ -77,7 +77,7 @@ VariableName
 Punctuation
 Function
 Whitespace
-Type
+Class
 Whitespace
 VariableName
 NewLine

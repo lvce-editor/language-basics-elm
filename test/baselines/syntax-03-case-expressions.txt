@@ -23,7 +23,7 @@ Whitespace
 KeywordControl
 NewLine
 Whitespace
-Type
+Class
 Whitespace
 VariableName
 Whitespace
@@ -34,7 +34,7 @@ VariableName
 NewLine
 NewLine
 Whitespace
-Type
+Class
 Whitespace
 Punctuation
 NewLine

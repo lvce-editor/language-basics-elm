@@ -143,12 +143,12 @@ NewLine
 Whitespace
 Punctuation
 Whitespace
-Type
+Class
 NewLine
 Whitespace
 Punctuation
 Whitespace
-Type
+Class
 NewLine
 NewLine
 NewLine
@@ -182,7 +182,7 @@ Whitespace
 KeywordControl
 NewLine
 Whitespace
-Type
+Class
 Whitespace
 Punctuation
 NewLine
@@ -195,7 +195,7 @@ Numeric
 NewLine
 NewLine
 Whitespace
-Type
+Class
 Whitespace
 Punctuation
 NewLine
@@ -245,7 +245,7 @@ Punctuation
 Whitespace
 Function
 Whitespace
-Type
+Class
 Whitespace
 Punctuation
 Whitespace
@@ -289,7 +289,7 @@ Punctuation
 Whitespace
 Function
 Whitespace
-Type
+Class
 Whitespace
 Punctuation
 Whitespace
