@@ -101,6 +101,7 @@ const importKeywords = new Set(['exposing', 'import', 'module'])
 const controlKeywords = new Set(['case', 'else', 'if', 'of', 'then'])
 const operatorKeywords = new Set(['not'])
 const languageConstants = new Set(['False', 'Nothing', 'True'])
+const knownQualifiedFunctions = new Set(['List.indexedMap'])
 
 const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/
 const RE_NUMBER =
@@ -141,6 +142,9 @@ const isFunctionDefinition = (line, index, name) => {
   if (index === 0) {
     return /^\s*:/.test(rest) || /^\s*=/.test(rest) || /^\s+.*=/.test(rest)
   }
+  if (/^\s*=/.test(rest)) {
+    return false
+  }
   return /^\s+.+\s*=/.test(rest)
 }
 
@@ -161,15 +165,20 @@ const isExposedFunction = (line, index, name) => {
   return exposingIndex !== -1 && index > exposingIndex
 }
 
-const isHtmlFunction = (line, index, name) => {
+const isKnownQualifiedFunction = (line, index, name) => {
   if (!/^[a-z_]/.test(name)) {
     return false
   }
   const prefix = line.slice(0, index)
   const match = prefix.match(
-    /(?:^|[^A-Za-z\d_'.])([A-Z][A-Za-z\d_']*(?:\.[A-Z][A-Za-z\d_']*)*)\.$/,
+    /(?:^|[^A-Za-z\d_'])([A-Z][A-Za-z\d_']*(?:\.[A-Z][A-Za-z\d_']*)*\.)$/,
   )
-  return match?.[1] === 'Html' || match?.[1].startsWith('Html.')
+  if (!match) {
+    return false
+  }
+  return (
+    match[1].startsWith('Html.') || knownQualifiedFunctions.has(match[1] + name)
+  )
 }
 
 const isFunctionBoundary = (prefix) => {
@@ -398,11 +407,11 @@ export const tokenizeLine = (line, lineState) => {
         type = TokenType.Keyword
       } else if (languageConstants.has(name)) {
         type = TokenType.LanguageConstantBoolean
-      } else if (isHtmlFunction(line, index, name)) {
-        type = TokenType.Function
       } else if (isFunctionDefinition(line, index, name)) {
         type = TokenType.Function
       } else if (isExposedFunction(line, index, name)) {
+        type = TokenType.Function
+      } else if (isKnownQualifiedFunction(line, index, name)) {
         type = TokenType.Function
       } else if (isFunctionApplication(line, index, name)) {
         type = TokenType.Function
