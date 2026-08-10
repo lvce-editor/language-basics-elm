@@ -100,7 +100,7 @@ const keywords = new Set([
 const importKeywords = new Set(['exposing', 'import', 'module'])
 const controlKeywords = new Set(['case', 'else', 'if', 'of', 'then'])
 const operatorKeywords = new Set(['not'])
-const languageConstants = new Set(['False', 'True'])
+const languageConstants = new Set(['False', 'Nothing', 'True'])
 const knownQualifiedFunctions = new Set(['List.indexedMap'])
 
 const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/
@@ -170,6 +170,14 @@ const isKnownQualifiedFunction = (line, index, name) => {
   return Boolean(match && knownQualifiedFunctions.has(match[1] + name))
 }
 
+const isFunctionBoundary = (prefix) => {
+  return (
+    /[.([,{]$/.test(prefix) ||
+    /(?:^|[^=<>/])=$/.test(prefix) ||
+    /(?:->|\|>)$/.test(prefix)
+  )
+}
+
 const isFunctionApplication = (line, index, name) => {
   if (!/^[a-z_]/.test(name)) {
     return false
@@ -185,7 +193,7 @@ const isFunctionApplication = (line, index, name) => {
   if (!prefix) {
     return true
   }
-  return /[.([,{=|>]$/.test(prefix)
+  return isFunctionBoundary(prefix)
 }
 
 const getUnionConstructor = (line) => {
