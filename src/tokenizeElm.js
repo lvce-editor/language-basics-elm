@@ -100,7 +100,7 @@ const keywords = new Set([
 const importKeywords = new Set(['exposing', 'import', 'module'])
 const controlKeywords = new Set(['case', 'else', 'if', 'of', 'then'])
 const operatorKeywords = new Set(['not'])
-const languageConstants = new Set(['False', 'True'])
+const languageConstants = new Set(['False', 'Nothing', 'True'])
 
 const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/
 const RE_NUMBER =
