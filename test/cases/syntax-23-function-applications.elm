@@ -9,3 +9,7 @@ view model =
 format model =
     model.count
         |> String.fromInt
+
+countRemaining todos =
+    todos
+        |> List.length

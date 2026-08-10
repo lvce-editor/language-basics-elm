@@ -161,11 +161,14 @@ const isFunctionApplication = (line, index, name) => {
   if (!/^[a-z_]/.test(name)) {
     return false
   }
+  const prefix = line.slice(0, index).trimEnd()
+  if (/(?:^|\s)\|>\s*(?:[A-Z][A-Za-z\d_']*\.)*$/.test(prefix)) {
+    return true
+  }
   const rest = line.slice(index + name.length)
   if (!/^\s+(?=[A-Za-z\d_'"([{\\-])/.test(rest)) {
     return false
   }
-  const prefix = line.slice(0, index).trimEnd()
   if (!prefix) {
     return true
   }
