@@ -5,7 +5,7 @@ Whitespace
 KeywordImport
 Whitespace
 Punctuation
-Type
+Class
 Punctuation
 Whitespace
 Function
@@ -32,7 +32,7 @@ Whitespace
 KeywordImport
 Whitespace
 Punctuation
-Type
+Class
 Punctuation
 NewLine
 KeywordImport
@@ -54,7 +54,7 @@ Whitespace
 KeywordImport
 Whitespace
 Punctuation
-Type
+Class
 Punctuation
 NewLine
 KeywordImport
@@ -70,7 +70,7 @@ Whitespace
 KeywordImport
 Whitespace
 Punctuation
-Type
+Class
 Punctuation
 NewLine
 NewLine
