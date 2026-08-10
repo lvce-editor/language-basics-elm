@@ -166,11 +166,19 @@ const isExposedFunction = (line, index, name) => {
 }
 
 const isKnownQualifiedFunction = (line, index, name) => {
+  if (!/^[a-z_]/.test(name)) {
+    return false
+  }
   const prefix = line.slice(0, index)
   const match = prefix.match(
     /(?:^|[^A-Za-z\d_'])([A-Z][A-Za-z\d_']*(?:\.[A-Z][A-Za-z\d_']*)*\.)$/,
   )
-  return Boolean(match && knownQualifiedFunctions.has(match[1] + name))
+  if (!match) {
+    return false
+  }
+  return (
+    match[1].startsWith('Html.') || knownQualifiedFunctions.has(match[1] + name)
+  )
 }
 
 const isFunctionBoundary = (prefix) => {
