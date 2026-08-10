@@ -5,7 +5,7 @@ NewLine
 Whitespace
 Punctuation
 Whitespace
-Type
+Class
 Whitespace
 Type
 Whitespace

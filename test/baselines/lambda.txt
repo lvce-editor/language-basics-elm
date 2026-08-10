@@ -40,7 +40,7 @@ VariableName
 Punctuation
 Function
 Whitespace
-Type
+Class
 Whitespace
 VariableName
 Punctuation
@@ -65,5 +65,5 @@ Function
 Whitespace
 Numeric
 Whitespace
-Type
+Class
 NewLine
