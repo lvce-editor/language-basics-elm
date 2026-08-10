@@ -161,6 +161,14 @@ const isExposedFunction = (line, index, name) => {
   return exposingIndex !== -1 && index > exposingIndex
 }
 
+const isFunctionBoundary = (prefix) => {
+  return (
+    /[.([,{]$/.test(prefix) ||
+    /(?:^|[^=<>/])=$/.test(prefix) ||
+    /(?:->|\|>)$/.test(prefix)
+  )
+}
+
 const isFunctionApplication = (line, index, name) => {
   if (!/^[a-z_]/.test(name)) {
     return false
@@ -176,7 +184,7 @@ const isFunctionApplication = (line, index, name) => {
   if (!prefix) {
     return true
   }
-  return /[.([,{=|>]$/.test(prefix)
+  return isFunctionBoundary(prefix)
 }
 
 const getUnionConstructor = (line) => {
