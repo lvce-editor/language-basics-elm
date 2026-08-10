@@ -4,6 +4,6 @@ VariableName
 Punctuation
 VariableName
 Whitespace
-Keyword
+KeywordControl
 Whitespace
 VariableName
