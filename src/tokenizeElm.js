@@ -234,9 +234,6 @@ const isTypeIdentifier = (line, index, multilineTypeContext) => {
   if (prefix.includes(':')) {
     return true
   }
-  if (/\bexposing\s*\([^)]*$/.test(prefix)) {
-    return true
-  }
   const constructor = getUnionConstructor(line)
   return constructor && index > constructor.index + constructor.name.length
 }
