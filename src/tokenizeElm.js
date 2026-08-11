@@ -94,10 +94,9 @@ const keywords = new Set([
   'port',
   'then',
   'type',
-  'where',
 ])
 
-const importKeywords = new Set(['exposing', 'import', 'module'])
+const importKeywords = new Set(['exposing', 'import', 'module', 'where'])
 const controlKeywords = new Set(['as', 'case', 'else', 'if', 'of', 'then'])
 const operatorKeywords = new Set(['not'])
 const languageConstants = new Set(['False', 'Nothing', 'True'])
