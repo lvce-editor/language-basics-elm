@@ -77,6 +77,9 @@ export const TokenMap = {
 export const initialLineState = {
   state: State.TopLevelContent,
   blockCommentDepth: 0,
+  knownTopLevelFunctions: [],
+  localScopes: [],
+  topLevelBindings: [],
 }
 
 const keywords = new Set([
@@ -101,6 +104,12 @@ const controlKeywords = new Set(['as', 'case', 'else', 'if', 'of', 'then'])
 const operatorKeywords = new Set(['not'])
 const languageConstants = new Set(['False', 'Just', 'Nothing', 'True'])
 const knownQualifiedFunctions = new Set(['List.indexedMap'])
+const bindingKeywords = new Set([
+  ...keywords,
+  ...importKeywords,
+  ...controlKeywords,
+  ...operatorKeywords,
+])
 
 const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/
 const RE_NUMBER =
@@ -197,6 +206,9 @@ const isFunctionApplication = (line, index, name) => {
     return true
   }
   const rest = line.slice(index + name.length)
+  if (/^\s*->/.test(rest)) {
+    return false
+  }
   if (!/^\s+(?=[A-Za-z\d_'"([{\\-])/.test(rest)) {
     return false
   }
@@ -204,6 +216,292 @@ const isFunctionApplication = (line, index, name) => {
     return true
   }
   return isFunctionBoundary(prefix)
+}
+
+const getIndentation = (line) => {
+  return line.match(/^[\t ]*/)[0].length
+}
+
+const getBindingNames = (pattern) => {
+  const names = []
+  for (const match of pattern.matchAll(/\b[a-z_][A-Za-z\d_']*/g)) {
+    const name = match[0]
+    if (name !== '_' && !bindingKeywords.has(name) && !names.includes(name)) {
+      names.push(name)
+    }
+  }
+  return names
+}
+
+const getDefinition = (line) => {
+  const annotation = line.match(/^(?:port\s+)?([a-z_][A-Za-z\d_']*)\s*:/)
+  if (annotation) {
+    return {
+      name: annotation[1],
+      parameters: [],
+    }
+  }
+  const definition = line.match(/^([a-z_][A-Za-z\d_']*)([^=]*)=(?!=)/)
+  if (!definition || bindingKeywords.has(definition[1])) {
+    return undefined
+  }
+  return {
+    name: definition[1],
+    parameters: getBindingNames(definition[2]),
+  }
+}
+
+const maskNonCode = (line, lineState) => {
+  const masked = [...line]
+  let state = lineState.state
+  let blockCommentDepth = lineState.blockCommentDepth || 0
+  let index = 0
+  const mask = (length) => {
+    masked.fill(' ', index, index + length)
+    index += length
+  }
+  while (index < line.length) {
+    const part = line.slice(index)
+    if (state === State.InsideBlockComment) {
+      if (part.startsWith('{-')) {
+        blockCommentDepth++
+        mask(2)
+      } else if (part.startsWith('-}')) {
+        blockCommentDepth--
+        mask(2)
+        if (blockCommentDepth === 0) {
+          state = State.TopLevelContent
+        }
+      } else {
+        mask(1)
+      }
+      continue
+    }
+    if (state === State.InsideTripleQuoteString) {
+      if (part.startsWith('"""')) {
+        mask(3)
+        state = State.TopLevelContent
+      } else {
+        mask(1)
+      }
+      continue
+    }
+    if (
+      state === State.InsideDoubleQuoteString ||
+      state === State.InsideSingleQuoteString
+    ) {
+      const quote = state === State.InsideDoubleQuoteString ? '"' : "'"
+      if (part.startsWith('\\')) {
+        mask(Math.min(2, part.length))
+      } else if (part.startsWith(quote)) {
+        mask(1)
+        state = State.TopLevelContent
+      } else {
+        mask(1)
+      }
+      continue
+    }
+    if (part.startsWith('--')) {
+      mask(part.length)
+    } else if (part.startsWith('{-')) {
+      blockCommentDepth = 1
+      state = State.InsideBlockComment
+      mask(2)
+    } else if (part.startsWith('"""')) {
+      state = State.InsideTripleQuoteString
+      mask(3)
+    } else if (part.startsWith('"')) {
+      state = State.InsideDoubleQuoteString
+      mask(1)
+    } else if (
+      part.startsWith("'") &&
+      !/[A-Za-z\d_']/.test(line[index - 1] || '')
+    ) {
+      state = State.InsideSingleQuoteString
+      mask(1)
+    } else {
+      index++
+    }
+  }
+  return masked.join('')
+}
+
+const cloneLocalScopes = (localScopes = []) => {
+  return localScopes.map((scope) => ({
+    ...scope,
+    names: [...scope.names],
+  }))
+}
+
+const addNames = (target, names) => {
+  for (const name of names) {
+    if (!target.includes(name)) {
+      target.push(name)
+    }
+  }
+}
+
+const getLocalDefinition = (code, indentation) => {
+  const content = code.slice(indentation)
+  const definition = content.match(/^([^=]+)=(?!=)/)
+  if (!definition || /^in\b/.test(content)) {
+    return undefined
+  }
+  const names = getBindingNames(definition[1])
+  if (names.length === 0) {
+    return undefined
+  }
+  if (/^[a-z_]/.test(content)) {
+    return {
+      bindingNames: [names[0]],
+      parameterNames: names.slice(1),
+    }
+  }
+  return {
+    bindingNames: names,
+    parameterNames: [],
+  }
+}
+
+const prepareBindingState = (line, lineState) => {
+  const code = maskNonCode(line, lineState)
+  const indentation = getIndentation(line)
+  const hasLayoutContent = code.trim().length > 0
+  const isTopLevel = hasLayoutContent && indentation === 0
+  let topLevelBindings = [...(lineState.topLevelBindings || [])]
+  let localScopes = cloneLocalScopes(lineState.localScopes)
+  let knownTopLevelFunctions = lineState.knownTopLevelFunctions || []
+
+  if (isTopLevel) {
+    topLevelBindings = []
+    localScopes = []
+  } else if (hasLayoutContent) {
+    localScopes = localScopes.filter((scope) => {
+      return scope.kind === 'let'
+        ? indentation >= scope.indent
+        : indentation > scope.indent
+    })
+  }
+
+  const inheritedLocalNames = localScopes.flatMap((scope) => scope.names)
+  const lineBindings = []
+  const addLineBinding = (start, names) => {
+    if (names.length > 0) {
+      lineBindings.push({ start, names })
+    }
+  }
+
+  if (isTopLevel) {
+    const definition = getDefinition(code)
+    if (definition) {
+      if (!knownTopLevelFunctions.includes(definition.name)) {
+        knownTopLevelFunctions = [...knownTopLevelFunctions, definition.name]
+      }
+      topLevelBindings = definition.parameters
+    }
+  }
+
+  const letMatches = [...code.matchAll(/\blet\b/g)]
+  for (const match of letMatches) {
+    const start = match.index + match[0].length
+    const afterLet = code.slice(start)
+    const definition = afterLet.match(/^\s*([^=\n]+)=(?!=)/)
+    const names = definition ? getBindingNames(definition[1]) : []
+    addLineBinding(start, names)
+    localScopes.push({
+      kind: 'let',
+      indent: indentation,
+      bindingIndent: undefined,
+      names: [...names],
+    })
+  }
+
+  const letScope = localScopes.findLast((scope) => scope.kind === 'let')
+  if (!isTopLevel && hasLayoutContent && letScope) {
+    const canBeBinding =
+      letScope.bindingIndent === undefined ||
+      letScope.bindingIndent === indentation
+    if (canBeBinding && indentation > letScope.indent) {
+      const definition = getLocalDefinition(code, indentation)
+      if (definition) {
+        letScope.bindingIndent = indentation
+        addNames(letScope.names, definition.bindingNames)
+        addLineBinding(indentation, definition.bindingNames)
+        if (definition.parameterNames.length > 0) {
+          addLineBinding(indentation, definition.parameterNames)
+          localScopes.push({
+            kind: 'layout',
+            indent: indentation,
+            names: definition.parameterNames,
+          })
+        }
+      }
+    }
+  }
+
+  for (const match of code.matchAll(/\\([^\n]*?)->/g)) {
+    const names = getBindingNames(match[1])
+    addLineBinding(match.index, names)
+    if (names.length > 0) {
+      localScopes.push({ kind: 'layout', indent: indentation, names })
+    }
+  }
+
+  for (const match of code.matchAll(/->/g)) {
+    const arrowIndex = match.index
+    if (isTopLevel && !code.slice(0, arrowIndex).includes('=')) {
+      continue
+    }
+    const previousArrowIndex = code.lastIndexOf('->', arrowIndex - 1)
+    const lambdaIndex = code.lastIndexOf('\\', arrowIndex)
+    if (lambdaIndex > previousArrowIndex) {
+      continue
+    }
+    const ofIndex = code.lastIndexOf(' of ', arrowIndex)
+    const patternStart = ofIndex === -1 ? indentation : ofIndex + 4
+    const names = getBindingNames(code.slice(patternStart, arrowIndex))
+    addLineBinding(patternStart, names)
+    if (names.length > 0) {
+      localScopes.push({ kind: 'layout', indent: indentation, names })
+    }
+  }
+
+  return {
+    inheritedLocalNames,
+    knownTopLevelFunctions,
+    lineBindings,
+    localScopes,
+    topLevelBindings,
+  }
+}
+
+const isShadowed = (
+  name,
+  index,
+  topLevelBindings,
+  inheritedLocalNames,
+  lineBindings,
+) => {
+  if (topLevelBindings.includes(name) || inheritedLocalNames.includes(name)) {
+    return true
+  }
+  return lineBindings.some(
+    (binding) => index >= binding.start && binding.names.includes(name),
+  )
+}
+
+const isRecordFieldName = (line, index, name) => {
+  const prefix = line.slice(0, index)
+  const openIndex = prefix.lastIndexOf('{')
+  const closeIndex = prefix.lastIndexOf('}')
+  if (openIndex <= closeIndex) {
+    return false
+  }
+  return /^\s*[:=]/.test(line.slice(index + name.length))
+}
+
+const isTypeContext = (line, index, multilineTypeContext) => {
+  return multilineTypeContext || line.slice(0, index).includes(':')
 }
 
 const getUnionConstructor = (line) => {
@@ -239,13 +537,21 @@ const isTypeIdentifier = (line, index, multilineTypeContext) => {
 
 /**
  * @param {string} line
- * @param {{state: number, blockCommentDepth?: number, multilineTypeContext?: boolean}} lineState
+ * @param {{state: number, blockCommentDepth?: number, multilineTypeContext?: boolean, knownTopLevelFunctions?: string[], localScopes?: any[], topLevelBindings?: string[]}} lineState
  */
 export const tokenizeLine = (line, lineState) => {
   let index = 0
   let state = lineState.state
   let blockCommentDepth = lineState.blockCommentDepth || 0
   let multilineTypeContext = lineState.multilineTypeContext || false
+  const {
+    inheritedLocalNames,
+    knownTopLevelFunctions,
+    lineBindings,
+    localScopes,
+    topLevelBindings,
+  } = prepareBindingState(line, lineState)
+  const knownTopLevelFunctionSet = new Set(knownTopLevelFunctions)
   const tokens = []
 
   if (!line.trim() || /^\S/.test(line)) {
@@ -392,6 +698,13 @@ export const tokenizeLine = (line, lineState) => {
     const identifier = part.match(RE_IDENTIFIER)
     if (identifier) {
       const name = identifier[0]
+      const shadowed = isShadowed(
+        name,
+        index,
+        topLevelBindings,
+        inheritedLocalNames,
+        lineBindings,
+      )
       let type = TokenType.VariableName
       if (importKeywords.has(name)) {
         type = TokenType.KeywordImport
@@ -409,7 +722,15 @@ export const tokenizeLine = (line, lineState) => {
         type = TokenType.Function
       } else if (isKnownQualifiedFunction(line, index, name)) {
         type = TokenType.Function
-      } else if (isFunctionApplication(line, index, name)) {
+      } else if (
+        !shadowed &&
+        line[index - 1] !== '.' &&
+        !isRecordFieldName(line, index, name) &&
+        !isTypeContext(line, index, multilineTypeContext) &&
+        knownTopLevelFunctionSet.has(name)
+      ) {
+        type = TokenType.Function
+      } else if (!shadowed && isFunctionApplication(line, index, name)) {
         type = TokenType.Function
       } else if (isModuleIdentifier(line, index)) {
         type = TokenType.VariableName
@@ -446,7 +767,10 @@ export const tokenizeLine = (line, lineState) => {
   return {
     state,
     blockCommentDepth,
+    knownTopLevelFunctions,
+    localScopes,
     multilineTypeContext,
+    topLevelBindings,
     tokens,
   }
 }

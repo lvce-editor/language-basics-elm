@@ -200,7 +200,7 @@ Whitespace
 Punctuation
 NewLine
 Whitespace
-Function
+VariableName
 Whitespace
 Punctuation
 Whitespace
