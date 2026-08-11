@@ -100,7 +100,7 @@ const keywords = new Set([
 const importKeywords = new Set(['exposing', 'import', 'module'])
 const controlKeywords = new Set(['as', 'case', 'else', 'if', 'of', 'then'])
 const operatorKeywords = new Set(['not'])
-const languageConstants = new Set(['False', 'Nothing', 'True'])
+const languageConstants = new Set(['False', 'Just', 'Nothing', 'True'])
 const knownQualifiedFunctions = new Set(['List.indexedMap'])
 
 const RE_IDENTIFIER = /^[A-Za-z_][A-Za-z\d_']*/

@@ -23,7 +23,7 @@ Whitespace
 KeywordControl
 NewLine
 Whitespace
-Class
+LanguageConstant
 Whitespace
 VariableName
 Whitespace

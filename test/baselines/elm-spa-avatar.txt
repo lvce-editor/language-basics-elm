@@ -166,7 +166,7 @@ Whitespace
 KeywordControl
 NewLine
 Whitespace
-Class
+LanguageConstant
 Whitespace
 VariableName
 Whitespace
@@ -237,7 +237,7 @@ VariableName
 NewLine
 NewLine
 Whitespace
-Class
+LanguageConstant
 Whitespace
 PunctuationString
 PunctuationString
@@ -255,7 +255,7 @@ VariableName
 NewLine
 NewLine
 Whitespace
-Class
+LanguageConstant
 Whitespace
 VariableName
 Whitespace
